@@ -1,38 +1,227 @@
-.App {
-  text-align: center;
+/* -------------------------------------------
+   Minimalist Black & White Epic Defuse Game v3
+   Simplified click effect to remove flicker
+   Replace entire App.css with this content
+   -------------------------------------------
+
+/* CSS Variables */
+:root {
+  --bg: #000;
+  --fg: #fff;
+  --cell-bg: #111;
+  --cell-border: #fff;
+  --hint-hot-bg: #fff;
+  --hint-warm-bg: #ddd;
+  --hint-cold-bg: #888;
+  --btn-border: #fff;
+  --btn-hover-bg: #fff;
+  --btn-hover-fg: #000;
+  --anim-speed: 0.2s ease-in-out;
 }
 
-.App-logo {
-  height: 40vmin;
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Game Container */
+.crossword-container {
+  position: relative;
+  background: var(--cell-bg);
+  padding: 2rem;
+  border: 2px solid var(--fg);
+  border-radius: 8px;
+  text-align: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.crossword-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.02) 0,
+    rgba(255,255,255,0.02) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  animation: overlayMove 8s linear infinite;
   pointer-events: none;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+@keyframes overlayMove {
+  from { transform: translateY(0); }
+  to   { transform: translateY(20px); }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Title */
+h1 {
+  font-size: 2rem;
+  letter-spacing: 3px;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  animation: fadeIn 1s ease-out both;
+}
+
+/* Top bar: Streaks & Best */
+.top-bar {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  animation: fadeIn 1s ease-out 0.3s both;
+}
+
+/* Share Button */
+button {
+  background: none;
+  border: 1px solid var(--btn-border);
+  color: var(--fg);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background var(--anim-speed), color var(--anim-speed),
+              transform var(--anim-speed);
+  margin-bottom: 1rem;
+  animation: fadeIn 1s ease-out 0.6s both;
+}
+button:hover {
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-fg);
+  transform: translateY(-2px);
+}
+
+/* Tries Left */
+.crossword-container > div:nth-of-type(3) {
+  margin-bottom: 1rem;
+  animation: fadeIn 1s ease-out 0.9s both;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-gap: 6px;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Cells */
+.cell {
+  width: 48px;
+  height: 48px;
+  background: var(--cell-bg);
+  border: 2px solid var(--cell-border);
+  border-radius: 4px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: transform var(--anim-speed), border-color var(--anim-speed);
+  user-select: none;
+  position: relative;
+}
+.cell:hover {
+  transform: scale(1.05);
+  border-color: var(--fg);
 }
 
-.App-link {
-  color: #61dafb;
+/* Simplified click flash effect */
+.cell:active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--fg);
+  opacity: 0.8;
+  animation: fadeOutline 0.3s ease both;
+}
+@keyframes fadeOutline {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Hint Styles */
+.hot {
+  background: var(--hint-hot-bg) !important;
+  color: var(--bg) !important;
+  animation: pulse 0.4s ease-in-out both;
+}
+.warm {
+  background: var(--hint-warm-bg) !important;
+  color: var(--bg) !important;
+  animation: pulse 0.4s ease-in-out both;
+}
+.cold {
+  background: var(--hint-cold-bg) !important;
+  color: var(--bg) !important;
+  animation: pulse 0.4s ease-in-out both;
+}
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.08); }
+}
+
+/* Bomb Reveal */
+.cell[data-reveal='bomb'] {
+  background: var(--hint-hot-bg) !important;
+  color: var(--bg) !important;
+  font-size: 1.5rem;
+  animation: shake 0.3s ease-in-out 0s 2 both;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-4px); }
+  75%     { transform: translateX(4px); }
+}
+
+/* Win/Lose Banners */
+.win-banner,
+.lose-banner {
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--fg);
+  border-radius: 4px;
+  display: inline-block;
+  animation: fadeIn 0.8s ease-out both;
+}
+.win-banner { margin-bottom: 1rem; }
+.lose-banner { margin-bottom: 1rem; }
+
+/* Play Again Button */
+.crossword-container > button:last-of-type {
+  margin-top: 1rem;
+  animation: fadeIn 1s ease-out 1.1s both;
+}
+
+/* Fade-In Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .cell {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
-  to {
-    transform: rotate(360deg);
+  .crossword-container {
+    padding: 1.5rem;
   }
 }
