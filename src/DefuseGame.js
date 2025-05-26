@@ -66,22 +66,25 @@ export default function DefuseGame() {
   // Share best streak with link included
   
 function handleShare() {
-  const text = `I’ve got a ${bestStreak}-game defuse streak on Defuse! 🔥 Play now: https://defuse.online`;
+  const text = `I’ve got a ${bestStreak}-game streak on Defuse 💣 — can you beat it?`;
+  const url = "https://defuse.online";
+
   if (navigator.share) {
     navigator.share({
-      title: "Defuse",
+      title: "Defuse 💣",
       text,
-      url: "https://defuse.online",
+      url
     });
   } else if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(
+    navigator.clipboard.writeText(`${text} ${url}`).then(
       () => alert("Copied to clipboard!"),
-      () => prompt("Copy this text:", text)
+      () => prompt("Copy this text:", `${text} ${url}`)
     );
   } else {
-    prompt("Copy this text:", text);
+    prompt("Copy this text:", `${text} ${url}`);
   }
 }
+
 
   
 
