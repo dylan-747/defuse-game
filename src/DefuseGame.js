@@ -17,6 +17,7 @@ export default function DefuseGame() {
   const [guesses, setGuesses] = useState([]);
   const won = guesses.some(g => g.row === bomb.row && g.col === bomb.col);
   const lost = !won && guesses.length >= maxTries;
+  const triesLeft = maxTries - guesses.length;
 
   // Streak logic
   const [streak, setStreak] = useState(() => {
@@ -49,7 +50,7 @@ export default function DefuseGame() {
     }
   }, [lost]);
 
-  // Leaderboard
+  // Leaderboard fetch
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const fetchLeaderboard = async () => {
@@ -92,7 +93,8 @@ export default function DefuseGame() {
       .insert([{ name, score: bestStreak }]);
     setSubmitting(false);
     if (error) {
-      alert('Error saving score');
+      console.error(error);
+      alert('Error saving score. Please ensure your Supabase table allows inserts (disable RLS in Supabase).');
     } else {
       setSubmitted(true);
       fetchLeaderboard();
@@ -121,9 +123,10 @@ export default function DefuseGame() {
         <div>Best: {bestStreak}</div>
       </div>
 
-      {/* Share button below, centered */}
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+      {/* Action bar: share + tries left, evenly spaced */}
+      <div className="action-bar">
         <button onClick={handleShare}>Share Best Streak</button>
+        <div>Tries left: {triesLeft}</div>
       </div>
 
       {/* Game grid */}
