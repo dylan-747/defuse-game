@@ -225,3 +225,20 @@ button:hover {
     padding: 1.5rem;
   }
 }
+/* App.css */
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.app-footer {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+.app-footer a {
+  color: #fff;
+  text-decoration: underline;
+}
