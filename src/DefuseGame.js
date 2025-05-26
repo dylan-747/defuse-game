@@ -17,24 +17,12 @@ export default function DefuseGame() {
   const triesLeft = maxTries - guesses.length;
 
   // Determine win/lose
-  const won = guesses.some(g => g.row === bomb.row && g.col === bomb.col);
+  const won = guesses.some((g) => g.row === bomb.row && g.col === bomb.col);
   const lost = !won && guesses.length >= maxTries;
 
   function handleClick(r, c) {
-    // block if game over or already clicked this cell
-    if (
-      won ||
-      lost ||
-      guesses.some(g => g.row === r && g.col === c)
-    ) {
-      return;
-    }
-
-    // vibrate if supported
-    if (navigator.vibrate) {
-      navigator.vibrate(100);
-    }
-
+    if (won || lost || guesses.some((g) => g.row === r && g.col === c)) return;
+    if (navigator.vibrate) navigator.vibrate(100);
     setGuesses([...guesses, { row: r, col: c }]);
   }
 
@@ -46,7 +34,7 @@ export default function DefuseGame() {
     return { text: "❄️", color: "blue" };
   }
 
-  // Persist streaks...
+  // Streak logic
   const [streak, setStreak] = useState(() => {
     const s = localStorage.getItem("defuseStreak");
     return s ? parseInt(s, 10) : 0;
@@ -75,17 +63,27 @@ export default function DefuseGame() {
     }
   }, [lost]);
 
-  function handleShare() {
-    const text = `I’ve got a ${bestStreak}-game defuse streak on Defuse! Can you top it? 🔥`;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(
-        () => alert("Copied to clipboard!"),
-        () => prompt("Copy this text:", text)
-      );
-    } else {
-      prompt("Copy this text:", text);
-    }
+  // Share best streak with link included
+  
+function handleShare() {
+  const text = `I’ve got a ${bestStreak}-game defuse streak on Defuse! 🔥 Play now: https://defuse.online`;
+  if (navigator.share) {
+    navigator.share({
+      title: "Defuse",
+      text,
+      url: "https://defuse.online",
+    });
+  } else if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(
+      () => alert("Copied to clipboard!"),
+      () => prompt("Copy this text:", text)
+    );
+  } else {
+    prompt("Copy this text:", text);
   }
+}
+
+  
 
   return (
     <div className="crossword-container">
@@ -95,7 +93,10 @@ export default function DefuseGame() {
         <div>Best: {bestStreak}</div>
       </div>
 
-      <button onClick={handleShare}>Share Best Streak</button>
+      <div className="button-bar">
+        <button onClick={handleShare}>Share Best Streak</button>
+      </div>
+
       <div>Tries left: {triesLeft}</div>
 
       <div
@@ -105,36 +106,40 @@ export default function DefuseGame() {
           gridTemplateRows: `repeat(${size}, 40px)`,
         }}
       >
-        {Array(size).fill(0).map((_, r) =>
-          Array(size).fill(0).map((_, c) => {
-            const guess = guesses.find(g => g.row === r && g.col === c);
-            const isBomb = r === bomb.row && c === bomb.col;
-            let content = "";
-            let style = {};
+        {Array(size)
+          .fill(0)
+          .map((_, r) =>
+            Array(size)
+              .fill(0)
+              .map((_, c) => {
+                const guess = guesses.find((g) => g.row === r && g.col === c);
+                const isBomb = r === bomb.row && c === bomb.col;
+                let content = "";
+                let style = {};
 
-            if (guess) {
-              const hint = getHint(r, c);
-              content = hint.text;
-              style = { background: hint.color };
-            }
+                if (guess) {
+                  const hint = getHint(r, c);
+                  content = hint.text;
+                  style = { background: hint.color };
+                }
 
-            if ((won || lost) && isBomb) {
-              content = "💣";
-              style = { background: "black", color: "white" };
-            }
+                if ((won || lost) && isBomb) {
+                  content = "💣";
+                  style = { background: "black", color: "white" };
+                }
 
-            return (
-              <div
-                key={`${r}-${c}`}
-                className="cell"
-                style={style}
-                onClick={() => handleClick(r, c)}
-              >
-                {content}
-              </div>
-            );
-          })
-        )}
+                return (
+                  <div
+                    key={`${r}-${c}`}
+                    className="cell"
+                    style={style}
+                    onClick={() => handleClick(r, c)}
+                  >
+                    {content}
+                  </div>
+                );
+              })
+          )}
       </div>
 
       {won && <div className="win-banner">You defused it! 🎉</div>}

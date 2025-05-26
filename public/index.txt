@@ -1,0 +1,23 @@
+  <!-- Page title / browser tab -->
+  <title>Defuse 💣</title>
+
+  <!-- Primary meta -->
+  <meta name="description" content="Defuse: can you find the hidden bomb in a 5×5 grid before it blows?">
+
+  <!-- Favicon / App icon -->
+  <link rel="icon" href="%PUBLIC_URL%/bomb.png" />
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/bomb.png" />
+
+  <!-- Social preview: Open Graph (Facebook, Slack, etc) -->
+  <meta property="og:title"       content="Defuse 💣" />
+  <meta property="og:description" content="Can you find the hidden bomb before it’s too late? Play Defuse online now!" />
+  <meta property="og:image"       content="%PUBLIC_URL%/bomb.png" />
+  <meta property="og:url"         content="https://defuse.online" />
+  <meta property="og:type"        content="website" />
+
+  <!-- Twitter summary card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Defuse 💣" />
+  <meta name="twitter:description" content="Can you find the hidden bomb before it’s too late? Play Defuse online now!" />
+  <meta name="twitter:image"       content="%PUBLIC_URL%/bomb.png" />
+
