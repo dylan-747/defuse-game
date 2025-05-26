@@ -8,10 +8,10 @@ export default function App() {
     <div className="app-wrapper">
       <DefuseGame />
       <footer className="app-footer">
-        Built by{' '}
-        <a href="mailto:jgdylan@icloud.com">
-          Dylan Galloway
-        </a>
+        <p>
+          Built by <a href="mailto:jgdylan@icloud.com">Dylan Galloway</a>
+        </p>
+        <p>© 2025 Defuse. All rights reserved.</p>
       </footer>
     </div>
   );
