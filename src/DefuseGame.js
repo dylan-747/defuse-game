@@ -57,7 +57,7 @@ export default function DefuseGame() {
     setLoadingLeaderboard(true);
     const { data, error } = await supabase
       .from('leaderboard')
-      .select('name, score')
+      .select('id, name, score')
       .order('score', { ascending: false })
       .limit(10);
     if (!error) setLeaderboard(data);
@@ -117,19 +117,16 @@ export default function DefuseGame() {
     <div className="crossword-container">
       <h1>Defuse</h1>
 
-      {/* Top bar: streaks only, centered */}
       <div className="top-bar" style={{ justifyContent: 'center', gap: '1.5rem' }}>
         <div>Streak: {streak}</div>
         <div>Best: {bestStreak}</div>
       </div>
 
-      {/* Action bar: share + tries left, evenly spaced */}
-      <div className="action-bar">
+      <div className="action-bar" style={{ rowGap: '1.5rem' }}>
         <button onClick={handleShare}>Share Best Streak</button>
         <div>Tries left: {triesLeft}</div>
       </div>
 
-      {/* Game grid */}
       <div className="grid" style={{ gridTemplateColumns: `repeat(${size}, 40px)`, gridTemplateRows: `repeat(${size}, 40px)` }}>
         {Array(size).fill(0).map((_, r) =>
           Array(size).fill(0).map((_, c) => {
@@ -182,9 +179,9 @@ export default function DefuseGame() {
         {loadingLeaderboard ? (
           <p>Loading...</p>
         ) : (
-          <ol>
+          <ol style={{ listStylePosition: 'inside', paddingLeft: 0 }}>
             {leaderboard.map((row, idx) => (
-              <li key={idx}>{row.name} — {row.score}</li>
+              <li key={row.id} style={{ margin: '0.25rem 0' }}>{row.name} — {row.score}</li>
             ))}
           </ol>
         )}
