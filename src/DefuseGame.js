@@ -99,14 +99,17 @@ export default function DefuseGame() {
     const manh = dRow + dCol;
     // Alien theme overrides
     if (theme === 'neon') {
-      // At bomb
       if (cheb === 0) return { text: '🛸', color: 'grey' };
-      // Adjacent
       if (cheb === 1) return { text: '👽', color: 'lime' };
-      // Nearby
       if (manh <= 4) return { text: '🪐', color: 'green' };
-      // Far
       return { text: '✨', color: 'teal' };
+    }
+    // Royal theme overrides
+    if (theme === 'gold') {
+      if (cheb === 0) return { text: '👑', color: 'gold' };
+      if (cheb === 1) return { text: '🤴', color: 'goldenrod' };
+      if (manh <= 4) return { text: '💎', color: 'deepskyblue' };
+      return { text: '✨', color: 'lightgoldenrodyellow' };
     }
     // Default hints
     if (cheb === 0) return { text: '💥', color: 'grey' };
