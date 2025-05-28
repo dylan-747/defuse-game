@@ -99,7 +99,7 @@ export default function DefuseGame() {
     const manh = dRow + dCol;
     if (cheb === 0) return { text: '💥', color: 'grey' };
     if (cheb === 1) return { text: '🔥', color: 'red' };
-    if (manh <= 3) return { text: '🌡️', color: 'orange' };
+    if (manh <= 4) return { text: '🌡️', color: 'orange' };
     return { text: '❄️', color: 'blue' };
   }
 
@@ -148,11 +148,17 @@ export default function DefuseGame() {
         }))}
       </div>
       {won && <div className="win-banner">You defused it! 🎉</div>}
-      {lost && <div className="lose-banner">Boom! 💥 Game over.</div>}
-      <div className="menu-button-container" style={{ textAlign: 'center', margin: '1rem 0' }}>
-        <button onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? 'Close Menu' : 'Open Menu'}</button>
-      </div>
-      {menuOpen && (
+{lost && <div className="lose-banner">Boom! 💥 Game over.</div>}
+{/* Play Again button above menu */}
+{(won || lost) && (
+  <button onClick={() => window.location.reload()}>Play Again</button>
+)}
+<div className="menu-button-container" style={{ textAlign: 'center', margin: '1rem 0' }}>
+  <button onClick={() => setMenuOpen(!menuOpen)}>
+    {menuOpen ? 'Close Menu' : 'Open Menu'}
+  </button>
+</div>
+{menuOpen && (
         <div className="menu-panel">
           <h3>Themes</h3>
           <div className="themes-list">
@@ -179,7 +185,7 @@ export default function DefuseGame() {
           <button onClick={handleSubmitScore} disabled={submitting}>{submitting ? 'Saving...' : 'Submit Score'}</button>
         </div>
       )}
-      {(won || lost) && <button onClick={() => window.location.reload()}>Play Again</button>}
+      
       <div className="leaderboard">
         <h2>🏆 Leaderboard</h2>
         {loadingLeaderboard ? <p>Loading...</p> : (
