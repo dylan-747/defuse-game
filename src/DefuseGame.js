@@ -99,7 +99,7 @@ export default function DefuseGame() {
     const manh = dRow + dCol;
     if (cheb === 0) return { text: '💥', color: 'grey' };
     if (cheb === 1) return { text: '🔥', color: 'red' };
-    if (manh <= 4) return { text: '🌡️', color: 'orange' };
+    if (manh <= 3) return { text: '🌡️', color: 'orange' };
     return { text: '❄️', color: 'blue' };
   }
 
