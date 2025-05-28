@@ -72,12 +72,21 @@ export default function DefuseGame() {
     setGuesses([...guesses, { row: r, col: c }]);
   }
 
-  // Hint logic
+  // Hint logic: red only for adjacent (Chebyshev distance = 1)
   function getHint(r, c) {
-    const dist = Math.abs(r - bomb.row) + Math.abs(c - bomb.col);
-    if (dist === 0) return { text: "💥", color: "grey" };
-    if (dist <= 2) return { text: "🔥", color: "red" };
-    if (dist <= 4) return { text: "🌡️", color: "orange" };
+    const dRow = Math.abs(r - bomb.row);
+    const dCol = Math.abs(c - bomb.col);
+    const cheb = Math.max(dRow, dCol);
+    const manh = dRow + dCol;
+    if (cheb === 0) {
+      return { text: "💥", color: "grey" };
+    }
+    if (cheb === 1) {
+      return { text: "🔥", color: "red" };
+    }
+    if (manh <= 4) {
+      return { text: "🌡️", color: "orange" };
+    }
     return { text: "❄️", color: "blue" };
   }
 
@@ -122,7 +131,7 @@ export default function DefuseGame() {
         <div>Best: {bestStreak}</div>
       </div>
 
-      <div className="action-bar" style={{ rowGap: '1.5rem' }}>
+      <div className="action-bar">
         <button onClick={handleShare}>Share Best Streak</button>
         <div>Tries left: {triesLeft}</div>
       </div>
@@ -181,7 +190,9 @@ export default function DefuseGame() {
         ) : (
           <ol style={{ listStylePosition: 'inside', paddingLeft: 0 }}>
             {leaderboard.map((row, idx) => (
-              <li key={row.id} style={{ margin: '0.25rem 0' }}>{row.name} — {row.score}</li>
+              <li key={row.id} style={{ margin: '0.25rem 0' }}>
+                {row.name} — {row.score}
+              </li>
             ))}
           </ol>
         )}
