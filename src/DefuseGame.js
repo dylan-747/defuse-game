@@ -5,25 +5,23 @@ import "./App.css";
 
 const THEMES = [
   { key: 'default', label: 'Classic', vars: {} },
-  { key: 'red', label: 'Red', vars: { '--bg': '#2b0000', '--cell-bg': '#400000', '--cell-border': '#ff4444', '--fg': '#ffecec' } },
-  { key: 'neon', label: 'Neon Green', vars: { '--bg': '#000', '--cell-bg': '#001100', '--cell-border': '#00ff00', '--fg': '#00ff00' } },
-  { key: 'gold', label: 'Gold', vars: { '--bg': '#111000', '--cell-bg': '#222000', '--cell-border': '#ffcc00', '--fg': '#ffeb99' } },
+  { key: 'red',     label: 'Red',        vars: { '--bg': '#2b0000', '--cell-bg': '#400000', '--cell-border': '#ff4444', '--fg': '#ffecec' } },
+  { key: 'neon',    label: 'Neon Green', vars: { '--bg': '#000',    '--cell-bg': '#001100', '--cell-border': '#00ff00', '--fg': '#00ff00' } },
+  { key: 'gold',    label: 'Gold',       vars: { '--bg': '#111000', '--cell-bg': '#222000', '--cell-border': '#ffcc00', '--fg': '#ffeb99' } },
+  { key: 'blue',    label: 'Ocean Blue', vars: { '--bg': '#001f3f', '--cell-bg': '#003366', '--cell-border': '#0074D9', '--fg': '#7FDBFF' } },
 ];
 
 // Unlock thresholds per theme
-const UNLOCKS = { default: 0, red: 5, neon: 10, gold: 20 };
+const UNLOCKS = { default: 0, red: 5, neon: 10, gold: 20, blue: 0 };
 
 export default function DefuseGame() {
-  // Theme state
   const [theme, setTheme] = useState(() => localStorage.getItem('defuseTheme') || 'default');
-  // Mode state
   const [hardMode, setHardMode] = useState(() => localStorage.getItem('defuseHardMode') === 'true');
   const size = hardMode ? 7 : 5;
   const maxTries = hardMode ? 7 : 5;
 
-  // Apply theme CSS variables and clear previous
   useEffect(() => {
-    // remove all theme vars
+    // clear previous vars
     const allKeys = THEMES.flatMap(t => Object.keys(t.vars));
     allKeys.forEach(key => document.documentElement.style.removeProperty(key));
     // apply current theme
@@ -34,7 +32,6 @@ export default function DefuseGame() {
     localStorage.setItem('defuseTheme', theme);
   }, [theme]);
 
-  // Persist mode toggle
   const toggleMode = () => {
     const next = !hardMode;
     setHardMode(next);
@@ -42,18 +39,14 @@ export default function DefuseGame() {
     window.location.reload();
   };
 
-  // Bomb position
   const [bomb] = useState(() => ({ row: Math.floor(Math.random() * size), col: Math.floor(Math.random() * size) }));
-  // UI state
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Click tracking
   const [guesses, setGuesses] = useState([]);
   const won = guesses.some(g => g.row === bomb.row && g.col === bomb.col);
   const lost = !won && guesses.length >= maxTries;
   const triesLeft = maxTries - guesses.length;
 
-  // Streak logic
   const [streak, setStreak] = useState(() => parseInt(localStorage.getItem('defuseStreak') || '0', 10));
   const [bestStreak, setBestStreak] = useState(() => parseInt(localStorage.getItem('defuseBestStreak') || '0', 10));
 
@@ -68,6 +61,7 @@ export default function DefuseGame() {
       }
     }
   }, [won]);
+
   useEffect(() => {
     if (lost) {
       setStreak(0);
@@ -75,7 +69,6 @@ export default function DefuseGame() {
     }
   }, [lost]);
 
-  // Leaderboard
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const fetchLeaderboard = async () => {
@@ -97,19 +90,26 @@ export default function DefuseGame() {
     const dCol = Math.abs(c - bomb.col);
     const cheb = Math.max(dRow, dCol);
     const manh = dRow + dCol;
-    // Alien theme overrides
+    // Neon Green (alien) theme
     if (theme === 'neon') {
       if (cheb === 0) return { text: '🛸', color: 'grey' };
       if (cheb === 1) return { text: '👽', color: 'lime' };
       if (manh <= 4) return { text: '🪐', color: 'green' };
       return { text: '✨', color: 'teal' };
     }
-    // Royal theme overrides
+    // Gold (royal) theme
     if (theme === 'gold') {
       if (cheb === 0) return { text: '👑', color: 'gold' };
       if (cheb === 1) return { text: '🤴', color: 'goldenrod' };
       if (manh <= 4) return { text: '💎', color: 'deepskyblue' };
       return { text: '✨', color: 'lightgoldenrodyellow' };
+    }
+    // Ocean Blue (marine) theme
+    if (theme === 'blue') {
+      if (cheb === 0) return { text: '🐬', color: '#001f3f' };
+      if (cheb === 1) return { text: '🏴‍☠️', color: '#0074D9' };
+      if (manh <= 4) return { text: '🦈', color: '#7FDBFF' };
+      return { text: '🌊', color: '#001f3f' };
     }
     // Default hints
     if (cheb === 0) return { text: '💥', color: 'grey' };
@@ -118,7 +118,6 @@ export default function DefuseGame() {
     return { text: '❄️', color: 'blue' };
   }
 
-  // Score submission
   const [name, setName] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -128,11 +127,9 @@ export default function DefuseGame() {
     const display = name + (hardMode ? ' (Hard Mode)' : '');
     const { error } = await supabase.from('leaderboard').insert([{ name: display, score: bestStreak }]);
     setSubmitting(false);
-    if (error) alert('Error saving score');
-    else { setSubmitted(true); fetchLeaderboard(); }
+    if (error) alert('Error saving score'); else { setSubmitted(true); fetchLeaderboard(); }
   };
 
-  // Share
   const handleShare = () => {
     const modeTag = hardMode ? ' (Hard)' : '';
     const text = `I’ve got a ${bestStreak}-game streak${modeTag} on Defuse 💣 — can you beat it?`;
@@ -144,8 +141,7 @@ export default function DefuseGame() {
     <div className="crossword-container">
       <h1>Defuse</h1>
       <div className="top-bar" style={{ justifyContent: 'center', gap: '1.5rem' }}>
-        <div>Streak: {streak}</div>
-        <div>Best: {bestStreak}</div>
+        <div>Streak: {streak}</div><div>Best: {bestStreak}</div>
       </div>
       <div className="action-bar">
         <button onClick={handleShare}>Share Best Streak</button>
@@ -155,25 +151,19 @@ export default function DefuseGame() {
         {Array(size).fill().map((_, r) => Array(size).fill().map((_, c) => {
           const guess = guesses.find(g => g.row === r && g.col === c);
           const isBomb = r === bomb.row && c === bomb.col;
-          let content = '';
-          let style = {};
-          if (guess) { const hint = getHint(r, c); content = hint.text; style = { background: hint.color }; }
+          let content = guess ? getHint(r, c).text : '';
+          let style = guess ? { background: getHint(r, c).color } : {};
           if ((won || lost) && isBomb) { content = '💣'; style = { background: 'black', color: 'white' }; }
           return <div key={`${r}-${c}`} className="cell" style={style} onClick={() => handleClick(r, c)}>{content}</div>;
         }))}
       </div>
       {won && <div className="win-banner">You defused it! 🎉</div>}
-{lost && <div className="lose-banner">Boom! 💥 Game over.</div>}
-{/* Play Again button above menu */}
-{(won || lost) && (
-  <button onClick={() => window.location.reload()}>Play Again</button>
-)}
-<div className="menu-button-container" style={{ textAlign: 'center', margin: '1rem 0' }}>
-  <button onClick={() => setMenuOpen(!menuOpen)}>
-    {menuOpen ? 'Close Menu' : 'Open Menu'}
-  </button>
-</div>
-{menuOpen && (
+      {lost && <div className="lose-banner">Boom! 💥 Game over.</div>}
+      {(won || lost) && <button onClick={() => window.location.reload()}>Play Again</button>}
+      <div className="menu-button-container" style={{ textAlign: 'center', margin: '1rem 0' }}>
+        <button onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? 'Close Menu' : 'Open Menu'}</button>
+      </div>
+      {menuOpen && (
         <div className="menu-panel">
           <h3>Themes</h3>
           <div className="themes-list">
@@ -181,10 +171,7 @@ export default function DefuseGame() {
               const unlock = UNLOCKS[t.key] || 0;
               const locked = bestStreak < unlock;
               return (
-                <button key={t.key}
-                  disabled={locked}
-                  onClick={() => setTheme(t.key)}
-                  style={{ margin: '0.25rem' }}>
+                <button key={t.key} disabled={locked} onClick={() => setTheme(t.key)} style={{ margin: '0.25rem' }}>
                   {t.label}{locked ? ` (Unlock at ${unlock})` : ''}
                 </button>
               );
@@ -200,7 +187,6 @@ export default function DefuseGame() {
           <button onClick={handleSubmitScore} disabled={submitting}>{submitting ? 'Saving...' : 'Submit Score'}</button>
         </div>
       )}
-      
       <div className="leaderboard">
         <h2>🏆 Leaderboard</h2>
         {loadingLeaderboard ? <p>Loading...</p> : (
