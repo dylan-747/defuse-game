@@ -128,6 +128,7 @@ export default function DefuseGame() {
   const [dailyStartTime, setDailyStartTime] = useState(null)
   const [dailyElapsed, setDailyElapsed] = useState(0)
   const [alreadyCompleted, setAlreadyCompleted] = useState(false)
+  const [awaitingName, setAwaitingName] = useState(false) // prompt for name flag
 
   const dateSeed = todayKey()
   function hashDate(str) {
@@ -151,6 +152,7 @@ export default function DefuseGame() {
       setDailyElapsed(0)
       setDailyWon(false)
       setDailyLost(false)
+      setAwaitingName(false)
       setAlreadyCompleted(false)
       if (lastPlayedDate === dateSeed && currentStreak > 0) {
         setAlreadyCompleted(true)
@@ -172,7 +174,7 @@ export default function DefuseGame() {
     if (dailyGuesses.some((g) => g.row === r && g.col === c)) return
 
     if (r === bombRowDaily.current && c === bombColDaily.current) {
-      // WIN: add bomb to guesses immediately
+      // WIN: add bomb to guesses so it renders immediately
       setDailyGuesses((prev) => [...prev, { row: r, col: c }])
       setDailyWon(true)
       setDailyElapsed(Math.floor((Date.now() - dailyStartTime) / 1000))
@@ -201,20 +203,8 @@ export default function DefuseGame() {
       setLastPlayedDate(dateSeed)
       localStorage.setItem("defuseLastDate", dateSeed)
 
-      // Insert into Supabase daily_scores
-      const record = {
-        id: crypto.randomUUID(),
-        player_id: playerId,
-        user_name: displayName || "Anonymous",
-        date_key: dateSeed,
-        time_taken: Math.floor((Date.now() - dailyStartTime) / 1000),
-        streak: newStreak,
-        completed_at: new Date().toISOString(),
-      }
-      const { error } = await supabase
-        .from("daily_scores")
-        .insert([record])
-      if (error) console.error("Error inserting daily_scores:", error)
+      // Delay inserting into Supabase until name is provided
+      setAwaitingName(true)
     } else {
       // WRONG GUESS
       setDailyGuesses((prev) => [...prev, { row: r, col: c }])
@@ -320,10 +310,21 @@ export default function DefuseGame() {
   const handleSubmitScore = async () => {
     if (!name) return alert("Enter name")
     setSubmitting(true)
-    const display = name
+    const display = name.trim()
+    saveDisplayName(display)
+
+    const record = {
+      id: crypto.randomUUID(),
+      player_id: playerId,
+      user_name: display,
+      date_key: dateSeed,
+      time_taken: dailyElapsed,
+      streak: currentStreak,
+      completed_at: new Date().toISOString(),
+    }
     const { error } = await supabase
-      .from("leaderboard")
-      .insert([{ name: display, score: bestStreak }])
+      .from("daily_scores")
+      .insert([record])
     setSubmitting(false)
     if (error) alert("Error saving score")
     else {
@@ -453,13 +454,14 @@ export default function DefuseGame() {
                     let content = ""
                     let style = {}
 
-                    // If guess or loss, reveal bomb or hints
+                    // If guessed or loss, reveal bomb/hints
                     if (guessed || dailyLoseFlag) {
                       if (
                         r === bombRowDaily.current &&
                         c === bombColDaily.current
                       ) {
-                        content = "💥"
+                        // Show “💥” on loss, “💣” on win
+                        content = dailyLoseFlag ? "💥" : "💣"
                         style = { background: "grey", color: "white" }
                       } else {
                         const hint = getHint(r, c)
@@ -468,7 +470,7 @@ export default function DefuseGame() {
                       }
                     }
 
-                    // If win and bomb cell, show bomb
+                    // If win, reveal bomb “💣” even if not guessed
                     if (
                       dailyWinFlag &&
                       r === bombRowDaily.current &&
@@ -500,14 +502,33 @@ export default function DefuseGame() {
               )}
           </div>
 
-          {/* Win banner */}
-          {dailyWinFlag && (
-            <div className="win-banner" style={{ marginBottom: "1rem" }}>
-              You defused it! 🎉
+          {/* WIN banner + Name Input */}
+          {dailyWinFlag && !submitted && awaitingName && (
+            <div style={{ marginTop: "1rem", textAlign: "center" }}>
+              <div className="win-banner" style={{ marginBottom: "0.5rem" }}>
+                You defused it! 🎉
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{ padding: "0.5rem", width: "160px" }}
+                  disabled={submitting}
+                />
+              </div>
+              <button
+                onClick={handleSubmitScore}
+                disabled={submitting}
+                style={{ marginTop: "0.5rem" }}
+              >
+                {submitting ? "Saving..." : "Submit Score"}
+              </button>
             </div>
           )}
 
-          {/* Loss copy-result only; no “Play Again” */}
+          {/* LOSS → Copy Result only */}
           {dailyLoseFlag && (
             <button
               style={{ marginTop: "0.5rem" }}
@@ -525,7 +546,7 @@ export default function DefuseGame() {
                       r === bombRowDaily.current &&
                       c === bombColDaily.current
                     ) {
-                      line += "💣"
+                      line += "💥"
                     } else {
                       const hint = getHint(r, c)
                       line += hint.text
@@ -538,7 +559,8 @@ export default function DefuseGame() {
                   "",
                   ...gridLines,
                   "",
-                  "💣 = Bomb",
+                  "💥 = Bomb exploded",
+                  "💣 = Bomb (if you’d found it)",
                   "🔥 etc. = Hint",
                   "⬜ = Untouched",
                   "defuse.online",
@@ -591,7 +613,7 @@ export default function DefuseGame() {
                             r === endlessBomb.row &&
                             c === endlessBomb.col
                           ) {
-                            content = "💣"
+                            content = "💥"
                             style = {
                               background: "grey",
                               color: "white",
