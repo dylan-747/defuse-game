@@ -146,8 +146,14 @@ export default function DefuseGame() {
     bombColDaily.current = (numericSeed * 7) % sizeDaily
   }, [numericSeed])
 
+  // Initialize only once when tab becomes "daily" for this date
   useEffect(() => {
-    if (activeTab === "daily") {
+    if (activeTab === "daily" && dailyStartTime === null) {
+      // If already played today, lock immediately
+      if (lastPlayedDate === dateSeed && currentStreak > 0) {
+        setAlreadyCompleted(true)
+        return
+      }
       setLivesLeft(5)
       setDailyGuesses([])
       setDailyStartTime(Date.now())
@@ -156,11 +162,8 @@ export default function DefuseGame() {
       setDailyLost(false)
       setAwaitingName(false)
       setAlreadyCompleted(false)
-      if (lastPlayedDate === dateSeed && currentStreak > 0) {
-        setAlreadyCompleted(true)
-      }
     }
-  }, [activeTab, dateSeed, lastPlayedDate, currentStreak])
+  }, [activeTab, dateSeed, lastPlayedDate, currentStreak, dailyStartTime])
 
   useEffect(() => {
     if (dailyStartTime === null) return
@@ -176,7 +179,7 @@ export default function DefuseGame() {
     if (dailyGuesses.some((g) => g.row === r && g.col === c)) return
 
     if (r === bombRowDaily.current && c === bombColDaily.current) {
-      // WIN: add bomb to guesses immediately
+      // WIN
       setDailyGuesses((prev) => [...prev, { row: r, col: c }])
       setDailyWon(true)
       setDailyElapsed(Math.floor((Date.now() - dailyStartTime) / 1000))
@@ -205,7 +208,7 @@ export default function DefuseGame() {
       setLastPlayedDate(dateSeed)
       localStorage.setItem("defuseLastDate", dateSeed)
 
-      // Delay inserting into Supabase until name is provided
+      // Delay Supabase insert until name is provided
       setAwaitingName(true)
     } else {
       // WRONG GUESS
@@ -226,6 +229,7 @@ export default function DefuseGame() {
   //
   const endlessUnlocked = currentStreak >= 3
   const [endlessBomb, setEndlessBomb] = useState({ row: 0, col: 0 })
+  const [endlessGuesses, setEndlessGuesses] = useState([])
   const [endlessTries, setEndlessTries] = useState(0)
   const [endlessWins, setEndlessWins] = useState(0)
 
@@ -234,6 +238,7 @@ export default function DefuseGame() {
       const r = Math.floor(Math.random() * 5)
       const c = Math.floor(Math.random() * 5)
       setEndlessBomb({ row: r, col: c })
+      setEndlessGuesses([])
       setEndlessTries(0)
       setEndlessWins(0)
     }
@@ -395,8 +400,8 @@ export default function DefuseGame() {
           }}
         >
           <h2>Welcome to Defuse!</h2>
-          <p style={{ maxWidth: "300px", marginBottom: "1rem" }}>
-            How to Play:
+          <p style={{ maxWidth: "400px", marginBottom: "1rem" }}>
+            <strong>How to Play:</strong>
             <br />
             • Click on squares to find the hidden bomb.
             <br />
@@ -404,13 +409,13 @@ export default function DefuseGame() {
             <br />
             • Hints show how close you are:
             <span style={{ display: "block" }}>
-              🔥 = adjacent (Chebyshev distance = 1),
+              🔥 = adjacent (Chebyshev = 1),
             </span>
             <span style={{ display: "block" }}>
               🌡️ = Manh. ≤ 4, ❄️ = farther.
             </span>
             <br />
-            • Find the bomb in time, and share your streak!
+            • Find the bomb quickly, and share your streak!
             <br />
             Come back daily for a new puzzle.
           </p>
@@ -421,7 +426,7 @@ export default function DefuseGame() {
             onChange={(e) => setDisplayName(e.target.value)}
             style={{
               padding: "0.5rem",
-              width: "180px",
+              width: "200px",
               marginBottom: "0.5rem",
               borderRadius: "4px",
               border: "1px solid #fff",
@@ -491,9 +496,9 @@ export default function DefuseGame() {
             setActiveTab("daily")
             setMenuOpen(false)
           }}
-          disabled={activeTab === "daily"}
+          disabled={alreadyCompleted || activeTab === "daily"}
         >
-          Daily Defuse
+          {alreadyCompleted ? "Daily 🔒" : "Daily Defuse"}
         </button>
         <button
           onClick={() => {
@@ -518,82 +523,82 @@ export default function DefuseGame() {
       </div>
 
       {/* 2) Daily Tab */}
-      {activeTab === "daily" && (
+      {activeTab === "daily" && !alreadyCompleted && (
         <div>
           <div style={{ marginBottom: "0.5rem" }}>
+            <span style={{ marginRight: "1rem" }}>
+              🔥 Streak: {currentStreak}
+            </span>
             <strong>Lives:</strong> {livesLeft} &nbsp;|&nbsp;{" "}
             <strong>Time:</strong>{" "}
             {String(dailyElapsed).padStart(2, "0")}s
           </div>
-          {!alreadyCompleted && (
-            <div
-              className="grid"
-              style={{
-                gridTemplateColumns: `repeat(${sizeDaily}, 40px)`,
-                gridTemplateRows: `repeat(${sizeDaily}, 40px)`,
-                marginBottom: "1rem",
-              }}
-            >
-              {Array(sizeDaily)
-                .fill(0)
-                .map((_, r) =>
-                  Array(sizeDaily)
-                    .fill(0)
-                    .map((_, c) => {
-                      const guessed = dailyGuesses.some(
-                        (g) => g.row === r && g.col === c
-                      )
-                      let content = ""
-                      let style = {}
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(${sizeDaily}, 40px)`,
+              gridTemplateRows: `repeat(${sizeDaily}, 40px)`,
+            }}
+          >
+            {Array(sizeDaily)
+              .fill(0)
+              .map((_, r) =>
+                Array(sizeDaily)
+                  .fill(0)
+                  .map((_, c) => {
+                    const guessed = dailyGuesses.some(
+                      (g) => g.row === r && g.col === c
+                    )
+                    let content = ""
+                    let style = {}
 
-                      // If guessed or loss, reveal bomb/hints
-                      if (guessed || dailyLoseFlag) {
-                        if (
-                          r === bombRowDaily.current &&
-                          c === bombColDaily.current
-                        ) {
-                          // Show “💥” on loss, “💣” on win
-                          content = dailyLoseFlag ? "💥" : "💣"
-                          style = { background: "grey", color: "white" }
-                        } else {
-                          const hint = getHint(r, c)
-                          content = hint.text
-                          style = { background: hint.color }
-                        }
-                      }
-
-                      // If win, reveal bomb “💣” even if not guessed
+                    // If guessed or loss, reveal bomb/hints
+                    if (guessed || dailyLoseFlag) {
                       if (
-                        dailyWinFlag &&
                         r === bombRowDaily.current &&
                         c === bombColDaily.current
                       ) {
-                        content = "💣"
+                        // Show “💥” on loss, “💣” on win
+                        content = dailyLoseFlag ? "💥" : "💣"
                         style = { background: "grey", color: "white" }
+                      } else {
+                        const hint = getHint(r, c)
+                        content = hint.text
+                        style = { background: hint.color }
                       }
+                    }
 
-                      return (
-                        <div
-                          key={`${r}-${c}`}
-                          className="cell"
-                          style={style}
-                          onClick={() => {
-                            if (
-                              !alreadyCompleted &&
-                              !dailyWinFlag &&
-                              !dailyLoseFlag
-                            ) {
-                              handleDailyClick(r, c)
-                            }
-                          }}
-                        >
-                          {content}
-                        </div>
-                      )
-                    })
-                )}
-            </div>
-          )}
+                    // If win, reveal bomb “💣” even if not guessed
+                    if (
+                      dailyWinFlag &&
+                      r === bombRowDaily.current &&
+                      c === bombColDaily.current
+                    ) {
+                      content = "💣"
+                      style = { background: "grey", color: "white" }
+                    }
+
+                    return (
+                      <div
+                        key={`${r}-${c}`}
+                        className="cell"
+                        style={style}
+                        onClick={() => {
+                          if (
+                            !alreadyCompleted &&
+                            !dailyWinFlag &&
+                            !dailyLoseFlag
+                          ) {
+                            handleDailyClick(r, c)
+                          }
+                        }}
+                      >
+                        {content}
+                      </div>
+                    )
+                  })
+              )}
+          </div>
 
           {/* WIN banner + Name Input */}
           {dailyWinFlag && !submitted && awaitingName && (
