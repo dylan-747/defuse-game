@@ -225,7 +225,7 @@ export default function DefuseGame() {
 
   //
   // ── 6) Endless Mode State ───────────────────────
-  //    (Now open for everyone—no unlock gating)
+  //    (Open for everyone)
   //
   const [endlessBomb, setEndlessBomb] = useState({ row: 0, col: 0 })
   const [endlessGuesses, setEndlessGuesses] = useState([])
