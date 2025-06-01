@@ -388,7 +388,7 @@ export default function DefuseGame() {
       className="crossword-container"
       style={
         activeTab === "daily" && alreadyCompleted
-          ? { overflow: "visible" }
+          ? { overflow: "visible", padding: "2rem 2rem 3rem" }
           : {}
       }
     >
@@ -405,7 +405,7 @@ export default function DefuseGame() {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 10,
-            padding: "1rem",
+            padding: "2rem",
             textAlign: "center",
             overflowY: "auto",
           }}
@@ -524,7 +524,7 @@ export default function DefuseGame() {
                 justifyContent: "center",
                 zIndex: 5,
                 textAlign: "center",
-                padding: "1rem",
+                padding: "2rem",
                 overflowY: "auto",
               }}
             >
@@ -692,9 +692,12 @@ export default function DefuseGame() {
       {/* 3) Endless Tab */}
       {activeTab === "endless" && (
         <div>
+          {/* Display daily streak even in endless mode */}
           <div style={{ marginBottom: "0.5rem" }}>
-            Your Wins: {endlessWins ? 1 : 0} &nbsp;|&nbsp;{" "}
-            Tries used this round: {endlessGuesses.length}
+            🔥 Streak: {currentStreak}
+          </div>
+          <div style={{ marginBottom: "0.5rem" }}>
+            Tries Left: {Math.max(0, MAX_ENDLESS_TRIES - endlessGuesses.length)}
           </div>
           <div
             className="grid"
@@ -721,11 +724,19 @@ export default function DefuseGame() {
                       style = { background: hint.color }
                     }
 
-                    if (endlessLost && r === endlessBomb.row && c === endlessBomb.col) {
+                    if (
+                      endlessLost &&
+                      r === endlessBomb.row &&
+                      c === endlessBomb.col
+                    ) {
                       content = "💥"
                       style = { background: "grey", color: "white" }
                     }
-                    if (endlessWins && r === endlessBomb.row && c === endlessBomb.col) {
+                    if (
+                      endlessWins &&
+                      r === endlessBomb.row &&
+                      c === endlessBomb.col
+                    ) {
                       content = "💣"
                       style = { background: "grey", color: "white" }
                     }
