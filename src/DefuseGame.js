@@ -542,7 +542,9 @@ export default function DefuseGame() {
                 <h2 style={{ margin: "0 0 0.5rem 0" }}>
                   🔒 Today’s Puzzle Completed
                 </h2>
-                <p style={{ margin: 0 }}>Come back tomorrow for a new challenge!</p>
+                <p style={{ margin: 0 }}>
+                  Come back tomorrow for a new challenge!
+                </p>
               </div>
             </div>
           )}
@@ -709,7 +711,7 @@ export default function DefuseGame() {
               display: "flex",
               justifyContent: "center",
               gap: "2rem",
-              alignItems: "center",      // <— This ensures they line up at the same height
+              alignItems: "center",      // ensures they line up at the same height
               marginBottom: "0.5rem",
             }}
           >

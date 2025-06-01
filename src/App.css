@@ -21,6 +21,7 @@
   padding: 0;
   box-sizing: border-box;
 }
+
 body {
   background: var(--bg);
   color: var(--fg);
@@ -45,8 +46,10 @@ body {
   border: 2px solid var(--fg);
   border-radius: 8px;
   text-align: center;
+  overflow: visible;       /* ← Changed from hidden to visible */
   isolation: isolate;
 }
+
 .crossword-container::before {
   content: "";
   position: absolute;
@@ -61,6 +64,7 @@ body {
   animation: overlayMove 8s linear infinite;
   pointer-events: none;
 }
+
 @keyframes overlayMove {
   from { transform: translateY(0); }
   to   { transform: translateY(20px); }
@@ -229,8 +233,9 @@ button:hover {
 }
 .app-footer a:hover {
   opacity: 0.8;
+}
 
-}/* Action bar: equal spacing between share and tries-left */
+/* Action bar: equal spacing between share and tries-left */
 .action-bar {
   display: flex;
   flex-direction: column;
@@ -238,7 +243,7 @@ button:hover {
   row-gap: 1.5rem;
   margin: 1rem 0;
 }
+
 .cell:active::after {
   border-color: var(--cell-border);
 }
-
