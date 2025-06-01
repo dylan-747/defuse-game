@@ -418,9 +418,11 @@ export default function DefuseGame() {
     }
 
     // Header: “Defuse YYYY-MM-DD X/5” where X = guesses-used (livesLeft + guessesCount)
-    const header = `Defuse ${dateSeed} ${
-      dailyWinFlag ? livesLeft + dailyGuesses.length : "X"
-    }/5`
+   
+const header = `Defuse ${dateSeed} ${
+  dailyWinFlag ? dailyGuesses.length : "X"
+}/5`
+
     const shareText = [header, "", ...gridLines, "", "defuse.online"].join("\n")
 
     navigator.clipboard.writeText(shareText)
