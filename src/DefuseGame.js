@@ -75,14 +75,19 @@ export default function DefuseGame() {
     () => localStorage.getItem("defuseTheme") || "default"
   )
   useEffect(() => {
+    // Clear out any previously set CSS variables
     const allKeys = THEMES.flatMap((t) => Object.keys(t.vars))
     allKeys.forEach((key) =>
       document.documentElement.style.removeProperty(key)
     )
+
+    // Apply the new theme's variables
     const themeObj = THEMES.find((t) => t.key === theme) || THEMES[0]
     Object.entries(themeObj.vars).forEach(([k, v]) =>
       document.documentElement.style.setProperty(k, v)
     )
+
+    // Persist the chosen theme
     localStorage.setItem("defuseTheme", theme)
   }, [theme])
 
@@ -383,15 +388,19 @@ export default function DefuseGame() {
   //
   // ── 10) Render ───────────────────────────────────
   //
+
+  // Add consistent padding so nothing is cropped by the white border.
+  // Also allow the “Daily Completed” overlay to overflow if needed.
+  const containerStyle = {
+    padding: "1.5rem",
+    boxSizing: "border-box",
+    ...(activeTab === "daily" && alreadyCompleted
+      ? { overflow: "visible" }
+      : {}),
+  }
+
   return (
-    <div
-      className="crossword-container"
-      style={
-        activeTab === "daily" && alreadyCompleted
-          ? { overflow: "visible", padding: "2rem 2rem 3rem" }
-          : {}
-      }
-    >
+    <div className="crossword-container" style={containerStyle}>
       {/* NAME & “HOW TO PLAY” MODAL */}
       {showNameModal && (
         <div
@@ -416,14 +425,14 @@ export default function DefuseGame() {
             <br />
             • Click on squares to find the hidden bomb.
             <br />
-            • You have 5 lives. Each wrong click deducts one life.
+            • You have 5 Tries. Each wrong click deducts one.
             <br />
-            • Hints show how close you are:
+            • Emojis show how close you are:
             <span style={{ display: "block" }}>
-              🔥 = adjacent (Chebyshev = 1),
+              🔥 = Touching (Chebyshev = 1),
             </span>
             <span style={{ display: "block" }}>
-              🌡️ = Manh. ≤ 4, ❄️ = farther.
+              🌡️ = Manh. ≤ 4, ❄️ = Way off bro.
             </span>
             <br />
             • Find the bomb quickly, and share your streak!
@@ -468,7 +477,7 @@ export default function DefuseGame() {
       )}
 
       {/* Title */}
-      <h1>Defuse</h1>
+      <h1 style={{ marginTop: 0 }}>Defuse</h1>
 
       {/* 1) Tabs */}
       <div
@@ -526,11 +535,14 @@ export default function DefuseGame() {
                 textAlign: "center",
                 padding: "2rem",
                 overflowY: "auto",
+                boxSizing: "border-box",
               }}
             >
               <div>
-                <h2>🔒 Today's Puzzle Completed</h2>
-                <p>Come back tomorrow for a new challenge!</p>
+                <h2 style={{ margin: "0 0 0.5rem 0" }}>
+                  🔒 Today’s Puzzle Completed
+                </h2>
+                <p style={{ margin: 0 }}>Come back tomorrow for a new challenge!</p>
               </div>
             </div>
           )}
@@ -541,9 +553,8 @@ export default function DefuseGame() {
                 <span style={{ marginRight: "1rem" }}>
                   🔥 Streak: {currentStreak}
                 </span>
-                <strong>Lives:</strong> {livesLeft} &nbsp;|&nbsp;{" "}
-                <strong>Time:</strong>{" "}
-                {String(dailyElapsed).padStart(2, "0")}s
+                <strong>Tries:</strong> {livesLeft} &nbsp;|&nbsp;{" "}
+                <strong>Time:</strong> {String(dailyElapsed).padStart(2, "0")}s
               </div>
               <div
                 className="grid"
@@ -692,13 +703,22 @@ export default function DefuseGame() {
       {/* 3) Endless Tab */}
       {activeTab === "endless" && (
         <div>
-          {/* Display daily streak even in endless mode */}
-          <div style={{ marginBottom: "0.5rem" }}>
-            🔥 Streak: {currentStreak}
+          {/* Display streak and tries side-by-side, aligned vertically */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "2rem",
+              alignItems: "center",      // <— This ensures they line up at the same height
+              marginBottom: "0.5rem",
+            }}
+          >
+            <div>🔥 Streak: {currentStreak}</div>
+            <div>
+              Tries Left: {Math.max(0, MAX_ENDLESS_TRIES - endlessGuesses.length)}
+            </div>
           </div>
-          <div style={{ marginBottom: "0.5rem" }}>
-            Tries Left: {Math.max(0, MAX_ENDLESS_TRIES - endlessGuesses.length)}
-          </div>
+
           <div
             className="grid"
             style={{
