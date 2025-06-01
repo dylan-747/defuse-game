@@ -39,6 +39,11 @@ body {
   align-items: center;
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*                        MAIN CONTAINER (CARD)                         */
+/*  **Critical change**: overflow is now VISIBLE so the lock overlay     */
+/*  can expand instead of being clipped.                                 */
+/* ────────────────────────────────────────────────────────────────────── */
 .crossword-container {
   position: relative;
   background: var(--cell-bg);
@@ -46,7 +51,7 @@ body {
   border: 2px solid var(--fg);
   border-radius: 8px;
   text-align: center;
-  overflow: visible;       /* ← Changed from hidden to visible */
+  overflow: visible;       /* ← was “hidden”; now “visible” so nothing gets cut off */
   isolation: isolate;
 }
 
@@ -64,7 +69,6 @@ body {
   animation: overlayMove 8s linear infinite;
   pointer-events: none;
 }
-
 @keyframes overlayMove {
   from { transform: translateY(0); }
   to   { transform: translateY(20px); }
@@ -105,6 +109,7 @@ button:hover {
   transform: translateY(-2px);
 }
 
+/* This targets the 3rd child <div> inside .crossword-container, if present */
 .crossword-container > div:nth-of-type(3) {
   margin-bottom: 1rem;
   animation: fadeIn 1s ease-out 0.9s both;
