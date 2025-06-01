@@ -75,14 +75,17 @@ export default function DefuseGame() {
     () => localStorage.getItem("defuseTheme") || "default"
   )
   useEffect(() => {
+    // Remove any previously set CSS variables
     const allKeys = THEMES.flatMap((t) => Object.keys(t.vars))
     allKeys.forEach((key) =>
       document.documentElement.style.removeProperty(key)
     )
+    // Apply the new theme’s variables
     const themeObj = THEMES.find((t) => t.key === theme) || THEMES[0]
     Object.entries(themeObj.vars).forEach(([k, v]) =>
       document.documentElement.style.setProperty(k, v)
     )
+    // Persist the chosen theme
     localStorage.setItem("defuseTheme", theme)
   }, [theme])
 
@@ -117,6 +120,7 @@ export default function DefuseGame() {
   )
 
   function todayKey() {
+    // Returns "YYYY-MM-DD" based on UTC
     return new Date().toISOString().split("T")[0]
   }
 
@@ -146,7 +150,7 @@ export default function DefuseGame() {
     bombColDaily.current = (numericSeed * 7) % sizeDaily
   }, [numericSeed])
 
-  // Initialize only once when tab becomes "daily"
+  // Initialize only once when tab becomes “daily”
   useEffect(() => {
     if (activeTab === "daily" && dailyStartTime === null) {
       if (lastPlayedDate === dateSeed && currentStreak > 0) {
@@ -192,9 +196,7 @@ export default function DefuseGame() {
           Date.now() - 86400000
         ).toISOString().split("T")[0]
         newStreak =
-          lastPlayedDate === yesterday
-            ? currentStreak + 1
-            : 1
+          lastPlayedDate === yesterday ? currentStreak + 1 : 1
       }
       setCurrentStreak(newStreak)
       localStorage.setItem("defuseStreak", String(newStreak))
@@ -225,7 +227,6 @@ export default function DefuseGame() {
 
   //
   // ── 6) Endless Mode State ───────────────────────
-  //    (Open for everyone; restored original hint‐behavior)
   //
   const [endlessBomb, setEndlessBomb] = useState({ row: 0, col: 0 })
   const [endlessGuesses, setEndlessGuesses] = useState([])
@@ -316,7 +317,7 @@ export default function DefuseGame() {
   //
   // ── 8) Score Submission & Leaderboards ─────────
   //
-  const [name, setName] = useState("")
+  const [name, setName] = useState("")           // for name input in daily win
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const handleSubmitScore = async () => {
@@ -336,8 +337,9 @@ export default function DefuseGame() {
     }
     const { error } = await supabase.from("daily_scores").insert([record])
     setSubmitting(false)
-    if (error) alert("Error saving score")
-    else {
+    if (error) {
+      alert("Error saving score")
+    } else {
       setSubmitted(true)
       fetchLeaderboard()
     }
@@ -390,11 +392,46 @@ export default function DefuseGame() {
   }, [alreadyCompleted, activeTab])
 
   //
+  // ── Build & Copy “Share Result” Text ───────────────────────────
+  //
+  function shareDailyResult() {
+    // Build a 5×5 grid of emojis: for each cell, “⬜” if not guessed,
+    // “💣” if bomb, or the hint emoji if guessed but not bomb.
+    const gridLines = []
+    for (let r = 0; r < sizeDaily; r++) {
+      let line = ""
+      for (let c = 0; c < sizeDaily; c++) {
+        const guessed = dailyGuesses.some((g) => g.row === r && g.col === c)
+        if (!guessed) {
+          line += "⬜"
+        } else if (
+          r === bombRowDaily.current &&
+          c === bombColDaily.current
+        ) {
+          line += "💣"
+        } else {
+          const hint = getHint(r, c, "daily")
+          line += hint.text
+        }
+      }
+      gridLines.push(line)
+    }
+
+    // Header: “Defuse YYYY-MM-DD X/5” where X = guesses-used (livesLeft + guessesCount)
+    const header = `Defuse ${dateSeed} ${
+      dailyWinFlag ? livesLeft + dailyGuesses.length : "X"
+    }/5`
+    const shareText = [header, "", ...gridLines, "", "defuse.online"].join("\n")
+
+    navigator.clipboard.writeText(shareText)
+    alert("Result copied to clipboard!")
+  }
+
+  //
   // ── 10) Render ───────────────────────────────────
   //
 
-  // Add consistent padding so nothing is cropped by the white border.
-  // (“overflow: visible” is already in CSS, but we also set it inline when locked.)
+  // Ensure container has padding, and if locked, allow overflow just in case
   const containerStyle = {
     padding: "1.5rem",
     boxSizing: "border-box",
@@ -521,7 +558,7 @@ export default function DefuseGame() {
         </button>
       </div>
 
-      {/* 2) Daily Tab (only renders if not alreadyCompleted) */}
+      {/* 2) Daily Tab (only if not alreadyCompleted) */}
       {activeTab === "daily" && !alreadyCompleted && (
         <div style={{ position: "relative" }}>
           <div style={{ marginBottom: "0.5rem" }}>
@@ -581,10 +618,7 @@ export default function DefuseGame() {
                         className="cell"
                         style={style}
                         onClick={() => {
-                          if (
-                            !dailyWinFlag &&
-                            !dailyLoseFlag
-                          ) {
+                          if (!dailyWinFlag && !dailyLoseFlag) {
                             handleDailyClick(r, c)
                           }
                         }}
@@ -596,8 +630,8 @@ export default function DefuseGame() {
               )}
           </div>
 
-          {/* WIN banner + Name Input */}
-          {dailyWinFlag && !submitted && awaitingName && (
+          {/* WIN banner + Share + Name Input */}
+          {dailyWinFlag && (
             <div style={{ marginTop: "1rem", textAlign: "center" }}>
               <div
                 className="win-banner"
@@ -605,23 +639,35 @@ export default function DefuseGame() {
               >
                 You defused it! 🎉
               </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Enter your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  style={{ padding: "0.5rem", width: "160px" }}
-                  disabled={submitting}
-                />
-              </div>
+              {/* “Share Result” button now always visible once dailyWinFlag */}
               <button
-                onClick={handleSubmitScore}
-                disabled={submitting}
-                style={{ marginTop: "0.5rem" }}
+                onClick={shareDailyResult}
+                style={{ marginBottom: "0.5rem" }}
               >
-                {submitting ? "Saving..." : "Submit Score"}
+                Share Result
               </button>
+              {/* Only show the name‐input + Submit Score if not already submitted */}
+              {!submitted && awaitingName && (
+                <>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Enter your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      style={{ padding: "0.5rem", width: "160px" }}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSubmitScore}
+                    disabled={submitting}
+                    style={{ marginTop: "0.5rem" }}
+                  >
+                    {submitting ? "Saving..." : "Submit Score"}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -675,19 +721,22 @@ export default function DefuseGame() {
       {/* 3) Endless Tab */}
       {activeTab === "endless" && (
         <div>
-          {/* Display streak and tries side-by-side, aligned vertically */}
+          {/* Display streak and tries side-by-side */}
           <div
             style={{
               display: "flex",
               justifyContent: "center",
               gap: "2rem",
-              alignItems: "center",      // ensures they line up at the same height
+              alignItems: "center",
               marginBottom: "0.5rem",
             }}
           >
             <div>🔥 Streak: {currentStreak}</div>
             <div>
-              Tries Left: {Math.max(0, MAX_ENDLESS_TRIES - endlessGuesses.length)}
+              Tries Left: {Math.max(
+                0,
+                MAX_ENDLESS_TRIES - endlessGuesses.length
+              )}
             </div>
           </div>
 
