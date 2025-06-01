@@ -225,15 +225,15 @@ export default function DefuseGame() {
 
   //
   // ── 6) Endless Mode State ───────────────────────
+  //    (Now open for everyone—no unlock gating)
   //
-  const endlessUnlocked = currentStreak >= 3
   const [endlessBomb, setEndlessBomb] = useState({ row: 0, col: 0 })
   const [endlessGuesses, setEndlessGuesses] = useState([])
   const [endlessTries, setEndlessTries] = useState(0)
   const [endlessWins, setEndlessWins] = useState(0)
 
   useEffect(() => {
-    if (activeTab === "endless" && endlessUnlocked) {
+    if (activeTab === "endless") {
       const r = Math.floor(Math.random() * 5)
       const c = Math.floor(Math.random() * 5)
       setEndlessBomb({ row: r, col: c })
@@ -241,10 +241,9 @@ export default function DefuseGame() {
       setEndlessTries(0)
       setEndlessWins(0)
     }
-  }, [activeTab, endlessUnlocked])
+  }, [activeTab])
 
   async function handleEndlessClick(r, c) {
-    if (!endlessUnlocked) return
     if (endlessWins > 0 || endlessTries >= 4) return
 
     if (endlessBomb.row === r && endlessBomb.col === c) {
@@ -373,8 +372,7 @@ export default function DefuseGame() {
   //
   const dailyWinFlag = dailyWon
   const dailyLoseFlag = dailyLost
-  const endlessLoseFlag =
-    endlessUnlocked && endlessTries >= 5 && endlessWins === 0
+  const endlessLoseFlag = endlessTries >= 5 && endlessWins === 0
 
   //
   // ── 10) Render ───────────────────────────────────
@@ -483,9 +481,7 @@ export default function DefuseGame() {
           }}
           disabled={activeTab === "endless"}
         >
-          {endlessUnlocked
-            ? "Endless Mode"
-            : `Endless (Unlock at 3-day streak)`}
+          Endless Mode
         </button>
         <button
           onClick={() => {
@@ -501,13 +497,13 @@ export default function DefuseGame() {
       {/* 2) Daily Tab */}
       {activeTab === "daily" && (
         <div style={{ position: "relative" }}>
-          {/* DAILY-PLAY LOCK OVERLAY (only covers Daily content) */}
+          {/* DAILY-PLAY LOCK OVERLAY */}
           {alreadyCompleted && (
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "rgba(0,0,0,0.7)",
+                background: "rgba(0,0,0,0.95)",
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
@@ -681,79 +677,64 @@ export default function DefuseGame() {
       {/* 3) Endless Tab */}
       {activeTab === "endless" && (
         <div>
-          {!endlessUnlocked ? (
-            <div style={{ color: "grey" }}>
-              Endless Mode unlocks at a 3-day streak.
-            </div>
-          ) : (
-            <>
-              <div style={{ marginBottom: "0.5rem" }}>
-                Your Wins: {endlessWins} &nbsp;|&nbsp; Tries used this
-                round: {endlessTries}
-              </div>
-              <div
-                className="grid"
-                style={{
-                  gridTemplateColumns: `repeat(5, 40px)`,
-                  gridTemplateRows: `repeat(5, 40px)`,
-                }}
-              >
-                {Array(5)
+          <div style={{ marginBottom: "0.5rem" }}>
+            Your Wins: {endlessWins} &nbsp;|&nbsp; Tries used this round:{" "}
+            {endlessTries}
+          </div>
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(5, 40px)`,
+              gridTemplateRows: `repeat(5, 40px)`,
+            }}
+          >
+            {Array(5)
+              .fill(0)
+              .map((_, r) =>
+                Array(5)
                   .fill(0)
-                  .map((_, r) =>
-                    Array(5)
-                      .fill(0)
-                      .map((_, c) => {
-                        let content = ""
-                        let style = {}
+                  .map((_, c) => {
+                    let content = ""
+                    let style = {}
 
-                        if (
-                          endlessTries > 0 ||
-                          endlessWins > 0 ||
-                          endlessLoseFlag
-                        ) {
-                          if (
-                            r === endlessBomb.row &&
-                            c === endlessBomb.col
-                          ) {
-                            content = "💥"
-                            style = {
-                              background: "grey",
-                              color: "white",
-                            }
-                          }
+                    if (
+                      endlessTries > 0 ||
+                      endlessWins > 0 ||
+                      endlessLoseFlag
+                    ) {
+                      if (r === endlessBomb.row && c === endlessBomb.col) {
+                        content = "💥"
+                        style = {
+                          background: "grey",
+                          color: "white",
                         }
+                      }
+                    }
 
-                        return (
-                          <div
-                            key={`${r}-${c}`}
-                            className="cell"
-                            style={style}
-                            onClick={() => {
-                              if (
-                                endlessUnlocked &&
-                                !endlessLoseFlag &&
-                                endlessWins === 0
-                              ) {
-                                handleEndlessClick(r, c)
-                              }
-                            }}
-                          >
-                            {content}
-                          </div>
-                        )
-                      })
-                  )}
-              </div>
-              {(endlessWins > 0 || endlessLoseFlag) && (
-                <button
-                  style={{ marginTop: "1rem" }}
-                  onClick={() => window.location.reload()}
-                >
-                  Play Again
-                </button>
+                    return (
+                      <div
+                        key={`${r}-${c}`}
+                        className="cell"
+                        style={style}
+                        onClick={() => {
+                          if (!endlessLoseFlag && endlessWins === 0) {
+                            handleEndlessClick(r, c)
+                          }
+                        }}
+                      >
+                        {content}
+                      </div>
+                    )
+                  })
               )}
-            </>
+          </div>
+          {(endlessWins > 0 || endlessLoseFlag) && (
+            <button
+              style={{ marginTop: "1rem" }}
+              onClick={() => window.location.reload()}
+            >
+              Play Again
+            </button>
           )}
         </div>
       )}
@@ -798,15 +779,17 @@ export default function DefuseGame() {
         </div>
       )}
 
-      {/* 5) Menu Button */}
-      <div
-        className="menu-button-container"
-        style={{ textAlign: "center", margin: "1rem 0" }}
-      >
-        <button onClick={() => setMenuOpen((prev) => !prev)}>
-          {menuOpen ? "Close Menu" : "Open Menu"}
-        </button>
-      </div>
+      {/* 5) Menu Button (hide if Daily is locked) */}
+      {!(activeTab === "daily" && alreadyCompleted) && (
+        <div
+          className="menu-button-container"
+          style={{ textAlign: "center", margin: "1rem 0" }}
+        >
+          <button onClick={() => setMenuOpen((prev) => !prev)}>
+            {menuOpen ? "Close Menu" : "Open Menu"}
+          </button>
+        </div>
+      )}
 
       {/* 6) Menu Panel (Themes) */}
       {menuOpen && (
