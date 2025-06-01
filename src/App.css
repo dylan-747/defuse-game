@@ -45,7 +45,6 @@ body {
   border: 2px solid var(--fg);
   border-radius: 8px;
   text-align: center;
-  overflow: hidden;
   isolation: isolate;
 }
 .crossword-container::before {
