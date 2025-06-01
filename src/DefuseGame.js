@@ -225,52 +225,61 @@ export default function DefuseGame() {
 
   //
   // ── 6) Endless Mode State ───────────────────────
-  //    (Open for everyone)
+  //    (Open for everyone; restored original hint‐behavior)
   //
   const [endlessBomb, setEndlessBomb] = useState({ row: 0, col: 0 })
   const [endlessGuesses, setEndlessGuesses] = useState([])
-  const [endlessTries, setEndlessTries] = useState(0)
-  const [endlessWins, setEndlessWins] = useState(0)
+  const [endlessWins, setEndlessWins] = useState(false)
+  const [endlessLost, setEndlessLost] = useState(false)
+  const MAX_ENDLESS_TRIES = 5
 
   useEffect(() => {
     if (activeTab === "endless") {
-      const r = Math.floor(Math.random() * 5)
-      const c = Math.floor(Math.random() * 5)
+      const r = Math.floor(Math.random() * sizeDaily)
+      const c = Math.floor(Math.random() * sizeDaily)
       setEndlessBomb({ row: r, col: c })
       setEndlessGuesses([])
-      setEndlessTries(0)
-      setEndlessWins(0)
+      setEndlessWins(false)
+      setEndlessLost(false)
     }
   }, [activeTab])
 
   async function handleEndlessClick(r, c) {
-    if (endlessWins > 0 || endlessTries >= 4) return
+    if (endlessWins || endlessLost) return
+    if (endlessGuesses.some((g) => g.row === r && g.col === c)) return
 
-    if (endlessBomb.row === r && endlessBomb.col === c) {
-      setEndlessWins((prev) => prev + 1)
+    if (r === endlessBomb.row && c === endlessBomb.col) {
+      // WIN
+      setEndlessGuesses((prev) => [...prev, { row: r, col: c }])
+      setEndlessWins(true)
+
+      // Save to Supabase
       const record = {
         name: displayName || "Anonymous",
         score: bestStreak,
       }
-      const { error } = await supabase
-        .from("leaderboard")
-        .insert([record])
+      const { error } = await supabase.from("leaderboard").insert([record])
       if (error) console.error("Error inserting leaderboard:", error)
     } else {
-      setEndlessTries((prev) => prev + 1)
+      // WRONG GUESS
+      const newGuesses = [...endlessGuesses, { row: r, col: c }]
+      setEndlessGuesses(newGuesses)
+      if (newGuesses.length >= MAX_ENDLESS_TRIES) {
+        setEndlessLost(true)
+      }
     }
   }
 
   //
   // ── 7) Hint Logic ───────────────────────────────
   //
-  function getHint(r, c) {
+  function getHint(r, c, mode) {
     let bombR = -999,
       bombC = -999
-    if (activeTab === "daily") {
+    if (mode === "daily") {
       bombR = bombRowDaily.current
       bombC = bombColDaily.current
-    } else if (activeTab === "endless") {
+    } else if (mode === "endless") {
       bombR = endlessBomb.row
       bombC = endlessBomb.col
     }
@@ -325,9 +334,7 @@ export default function DefuseGame() {
       streak: currentStreak,
       completed_at: new Date().toISOString(),
     }
-    const { error } = await supabase
-      .from("daily_scores")
-      .insert([record])
+    const { error } = await supabase.from("daily_scores").insert([record])
     setSubmitting(false)
     if (error) alert("Error saving score")
     else {
@@ -372,13 +379,19 @@ export default function DefuseGame() {
   //
   const dailyWinFlag = dailyWon
   const dailyLoseFlag = dailyLost
-  const endlessLoseFlag = endlessTries >= 5 && endlessWins === 0
 
   //
   // ── 10) Render ───────────────────────────────────
   //
   return (
-    <div className="crossword-container">
+    <div
+      className="crossword-container"
+      style={
+        activeTab === "daily" && alreadyCompleted
+          ? { overflow: "visible" }
+          : {}
+      }
+    >
       {/* NAME & “HOW TO PLAY” MODAL */}
       {showNameModal && (
         <div
@@ -394,6 +407,7 @@ export default function DefuseGame() {
             zIndex: 10,
             padding: "1rem",
             textAlign: "center",
+            overflowY: "auto",
           }}
         >
           <h2>Welcome to Defuse!</h2>
@@ -511,6 +525,7 @@ export default function DefuseGame() {
                 zIndex: 5,
                 textAlign: "center",
                 padding: "1rem",
+                overflowY: "auto",
               }}
             >
               <div>
@@ -558,7 +573,7 @@ export default function DefuseGame() {
                             content = dailyLoseFlag ? "💥" : "💣"
                             style = { background: "grey", color: "white" }
                           } else {
-                            const hint = getHint(r, c)
+                            const hint = getHint(r, c, "daily")
                             content = hint.text
                             style = { background: hint.color }
                           }
@@ -645,7 +660,7 @@ export default function DefuseGame() {
                         ) {
                           line += "💥"
                         } else {
-                          const hint = getHint(r, c)
+                          const hint = getHint(r, c, "daily")
                           line += hint.text
                         }
                       }
@@ -678,8 +693,8 @@ export default function DefuseGame() {
       {activeTab === "endless" && (
         <div>
           <div style={{ marginBottom: "0.5rem" }}>
-            Your Wins: {endlessWins} &nbsp;|&nbsp; Tries used this round:{" "}
-            {endlessTries}
+            Your Wins: {endlessWins ? 1 : 0} &nbsp;|&nbsp;{" "}
+            Tries used this round: {endlessGuesses.length}
           </div>
           <div
             className="grid"
@@ -694,21 +709,25 @@ export default function DefuseGame() {
                 Array(5)
                   .fill(0)
                   .map((_, c) => {
+                    const guessed = endlessGuesses.some(
+                      (g) => g.row === r && g.col === c
+                    )
                     let content = ""
                     let style = {}
 
-                    if (
-                      endlessTries > 0 ||
-                      endlessWins > 0 ||
-                      endlessLoseFlag
-                    ) {
-                      if (r === endlessBomb.row && c === endlessBomb.col) {
-                        content = "💥"
-                        style = {
-                          background: "grey",
-                          color: "white",
-                        }
-                      }
+                    if (guessed) {
+                      const hint = getHint(r, c, "endless")
+                      content = hint.text
+                      style = { background: hint.color }
+                    }
+
+                    if (endlessLost && r === endlessBomb.row && c === endlessBomb.col) {
+                      content = "💥"
+                      style = { background: "grey", color: "white" }
+                    }
+                    if (endlessWins && r === endlessBomb.row && c === endlessBomb.col) {
+                      content = "💣"
+                      style = { background: "grey", color: "white" }
                     }
 
                     return (
@@ -717,7 +736,7 @@ export default function DefuseGame() {
                         className="cell"
                         style={style}
                         onClick={() => {
-                          if (!endlessLoseFlag && endlessWins === 0) {
+                          if (!endlessWins && !endlessLost) {
                             handleEndlessClick(r, c)
                           }
                         }}
@@ -728,7 +747,7 @@ export default function DefuseGame() {
                   })
               )}
           </div>
-          {(endlessWins > 0 || endlessLoseFlag) && (
+          {(endlessWins || endlessLost) && (
             <button
               style={{ marginTop: "1rem" }}
               onClick={() => window.location.reload()}
