@@ -146,10 +146,9 @@ export default function DefuseGame() {
     bombColDaily.current = (numericSeed * 7) % sizeDaily
   }, [numericSeed])
 
-  // Initialize only once when tab becomes "daily" for this date
+  // Initialize only once when tab becomes "daily"
   useEffect(() => {
     if (activeTab === "daily" && dailyStartTime === null) {
-      // If already played today, lock immediately
       if (lastPlayedDate === dateSeed && currentStreak > 0) {
         setAlreadyCompleted(true)
         return
@@ -381,7 +380,7 @@ export default function DefuseGame() {
   // ── 10) Render ───────────────────────────────────
   //
   return (
-    <div className="crossword-container" style={{ position: "relative" }}>
+    <div className="crossword-container">
       {/* NAME & “HOW TO PLAY” MODAL */}
       {showNameModal && (
         <div
@@ -456,29 +455,6 @@ export default function DefuseGame() {
         </div>
       )}
 
-      {/* DAILY-PLAY LOCK OVERLAY */}
-      {activeTab === "daily" && alreadyCompleted && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 5,
-            textAlign: "center",
-            padding: "1rem",
-          }}
-        >
-          <div>
-            <h2>🔒 Today's Puzzle Completed</h2>
-            <p>Come back tomorrow for a new challenge!</p>
-          </div>
-        </div>
-      )}
-
       {/* Title */}
       <h1>Defuse</h1>
 
@@ -496,7 +472,7 @@ export default function DefuseGame() {
             setActiveTab("daily")
             setMenuOpen(false)
           }}
-          disabled={alreadyCompleted || activeTab === "daily"}
+          disabled={activeTab === "daily"}
         >
           {alreadyCompleted ? "Daily 🔒" : "Daily Defuse"}
         </button>
@@ -523,152 +499,181 @@ export default function DefuseGame() {
       </div>
 
       {/* 2) Daily Tab */}
-      {activeTab === "daily" && !alreadyCompleted && (
-        <div>
-          <div style={{ marginBottom: "0.5rem" }}>
-            <span style={{ marginRight: "1rem" }}>
-              🔥 Streak: {currentStreak}
-            </span>
-            <strong>Lives:</strong> {livesLeft} &nbsp;|&nbsp;{" "}
-            <strong>Time:</strong>{" "}
-            {String(dailyElapsed).padStart(2, "0")}s
-          </div>
-          <div
-            className="grid"
-            style={{
-              gridTemplateColumns: `repeat(${sizeDaily}, 40px)`,
-              gridTemplateRows: `repeat(${sizeDaily}, 40px)`,
-            }}
-          >
-            {Array(sizeDaily)
-              .fill(0)
-              .map((_, r) =>
-                Array(sizeDaily)
-                  .fill(0)
-                  .map((_, c) => {
-                    const guessed = dailyGuesses.some(
-                      (g) => g.row === r && g.col === c
-                    )
-                    let content = ""
-                    let style = {}
-
-                    // If guessed or loss, reveal bomb/hints
-                    if (guessed || dailyLoseFlag) {
-                      if (
-                        r === bombRowDaily.current &&
-                        c === bombColDaily.current
-                      ) {
-                        // Show “💥” on loss, “💣” on win
-                        content = dailyLoseFlag ? "💥" : "💣"
-                        style = { background: "grey", color: "white" }
-                      } else {
-                        const hint = getHint(r, c)
-                        content = hint.text
-                        style = { background: hint.color }
-                      }
-                    }
-
-                    // If win, reveal bomb “💣” even if not guessed
-                    if (
-                      dailyWinFlag &&
-                      r === bombRowDaily.current &&
-                      c === bombColDaily.current
-                    ) {
-                      content = "💣"
-                      style = { background: "grey", color: "white" }
-                    }
-
-                    return (
-                      <div
-                        key={`${r}-${c}`}
-                        className="cell"
-                        style={style}
-                        onClick={() => {
-                          if (
-                            !alreadyCompleted &&
-                            !dailyWinFlag &&
-                            !dailyLoseFlag
-                          ) {
-                            handleDailyClick(r, c)
-                          }
-                        }}
-                      >
-                        {content}
-                      </div>
-                    )
-                  })
-              )}
-          </div>
-
-          {/* WIN banner + Name Input */}
-          {dailyWinFlag && !submitted && awaitingName && (
-            <div style={{ marginTop: "1rem", textAlign: "center" }}>
-              <div className="win-banner" style={{ marginBottom: "0.5rem" }}>
-                You defused it! 🎉
-              </div>
+      {activeTab === "daily" && (
+        <div style={{ position: "relative" }}>
+          {/* DAILY-PLAY LOCK OVERLAY (only covers Daily content) */}
+          {alreadyCompleted && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.7)",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 5,
+                textAlign: "center",
+                padding: "1rem",
+              }}
+            >
               <div>
-                <input
-                  type="text"
-                  placeholder="Enter your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  style={{ padding: "0.5rem", width: "160px" }}
-                  disabled={submitting}
-                />
+                <h2>🔒 Today's Puzzle Completed</h2>
+                <p>Come back tomorrow for a new challenge!</p>
               </div>
-              <button
-                onClick={handleSubmitScore}
-                disabled={submitting}
-                style={{ marginTop: "0.5rem" }}
-              >
-                {submitting ? "Saving..." : "Submit Score"}
-              </button>
             </div>
           )}
 
-          {/* LOSS → Copy Result only */}
-          {dailyLoseFlag && (
-            <button
-              style={{ marginTop: "0.5rem" }}
-              onClick={() => {
-                const gridLines = []
-                for (let r = 0; r < sizeDaily; r++) {
-                  let line = ""
-                  for (let c = 0; c < sizeDaily; c++) {
-                    const guessed = dailyGuesses.some(
-                      (g) => g.row === r && g.col === c
-                    )
-                    if (!guessed) {
-                      line += "⬜"
-                    } else if (
-                      r === bombRowDaily.current &&
-                      c === bombColDaily.current
-                    ) {
-                      line += "💥"
-                    } else {
-                      const hint = getHint(r, c)
-                      line += hint.text
+          {!alreadyCompleted && (
+            <>
+              <div style={{ marginBottom: "0.5rem" }}>
+                <span style={{ marginRight: "1rem" }}>
+                  🔥 Streak: {currentStreak}
+                </span>
+                <strong>Lives:</strong> {livesLeft} &nbsp;|&nbsp;{" "}
+                <strong>Time:</strong>{" "}
+                {String(dailyElapsed).padStart(2, "0")}s
+              </div>
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: `repeat(${sizeDaily}, 40px)`,
+                  gridTemplateRows: `repeat(${sizeDaily}, 40px)`,
+                }}
+              >
+                {Array(sizeDaily)
+                  .fill(0)
+                  .map((_, r) =>
+                    Array(sizeDaily)
+                      .fill(0)
+                      .map((_, c) => {
+                        const guessed = dailyGuesses.some(
+                          (g) => g.row === r && g.col === c
+                        )
+                        let content = ""
+                        let style = {}
+
+                        // If guessed or loss, reveal bomb/hints
+                        if (guessed || dailyLoseFlag) {
+                          if (
+                            r === bombRowDaily.current &&
+                            c === bombColDaily.current
+                          ) {
+                            content = dailyLoseFlag ? "💥" : "💣"
+                            style = { background: "grey", color: "white" }
+                          } else {
+                            const hint = getHint(r, c)
+                            content = hint.text
+                            style = { background: hint.color }
+                          }
+                        }
+
+                        // If win, reveal bomb “💣” even if not guessed
+                        if (
+                          dailyWinFlag &&
+                          r === bombRowDaily.current &&
+                          c === bombColDaily.current
+                        ) {
+                          content = "💣"
+                          style = { background: "grey", color: "white" }
+                        }
+
+                        return (
+                          <div
+                            key={`${r}-${c}`}
+                            className="cell"
+                            style={style}
+                            onClick={() => {
+                              if (
+                                !alreadyCompleted &&
+                                !dailyWinFlag &&
+                                !dailyLoseFlag
+                              ) {
+                                handleDailyClick(r, c)
+                              }
+                            }}
+                          >
+                            {content}
+                          </div>
+                        )
+                      })
+                  )}
+              </div>
+
+              {/* WIN banner + Name Input */}
+              {dailyWinFlag && !submitted && awaitingName && (
+                <div style={{ marginTop: "1rem", textAlign: "center" }}>
+                  <div
+                    className="win-banner"
+                    style={{ marginBottom: "0.5rem" }}
+                  >
+                    You defused it! 🎉
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Enter your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      style={{ padding: "0.5rem", width: "160px" }}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSubmitScore}
+                    disabled={submitting}
+                    style={{ marginTop: "0.5rem" }}
+                  >
+                    {submitting ? "Saving..." : "Submit Score"}
+                  </button>
+                </div>
+              )}
+
+              {/* LOSS → Copy Result only */}
+              {dailyLoseFlag && (
+                <button
+                  style={{ marginTop: "0.5rem" }}
+                  onClick={() => {
+                    const gridLines = []
+                    for (let r = 0; r < sizeDaily; r++) {
+                      let line = ""
+                      for (let c = 0; c < sizeDaily; c++) {
+                        const guessed = dailyGuesses.some(
+                          (g) => g.row === r && g.col === c
+                        )
+                        if (!guessed) {
+                          line += "⬜"
+                        } else if (
+                          r === bombRowDaily.current &&
+                          c === bombColDaily.current
+                        ) {
+                          line += "💥"
+                        } else {
+                          const hint = getHint(r, c)
+                          line += hint.text
+                        }
+                      }
+                      gridLines.push(line)
                     }
-                  }
-                  gridLines.push(line)
-                }
-                const resultText = [
-                  "💥 Failed today’s defuse. Streak reset.",
-                  "",
-                  ...gridLines,
-                  "",
-                  "💥 = Bomb exploded",
-                  "💣 = Bomb (if you’d found it)",
-                  "🔥 etc. = Hint",
-                  "⬜ = Untouched",
-                  "defuse.online",
-                ].join("\n")
-                navigator.clipboard.writeText(resultText)
-                alert("Copied to clipboard!")
-              }}
-            >
-              Copy Result
-            </button>
+                    const resultText = [
+                      "💥 Failed today’s defuse. Streak reset.",
+                      "",
+                      ...gridLines,
+                      "",
+                      "💥 = Bomb exploded",
+                      "💣 = Bomb (if you’d found it)",
+                      "🔥 etc. = Hint",
+                      "⬜ = Untouched",
+                      "defuse.online",
+                    ].join("\n")
+                    navigator.clipboard.writeText(resultText)
+                    alert("Copied to clipboard!")
+                  }}
+                >
+                  Copy Result
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
